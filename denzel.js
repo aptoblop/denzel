@@ -3,6 +3,7 @@ const Express = require("express");
 const BodyParser = require("body-parser");
 const MongoClient = require("mongodb").MongoClient;
 const ObjectId = require("mongodb").ObjectID;
+const assert = require('assert');
 const IMDB = require('./src/imdb');
 const DENZEL_IMDB_ID = 'nm0000243';
 
@@ -43,8 +44,36 @@ app.get("/movies/populate",async (request,response)=>{
   response.send("nbr movies: "+movies.length);
 });
 
-app.post("/person", (request, response) => {
-    collection.insert(request.body, (error, result) => {
+
+app.get("/movies",  (request,response)=>{
+  collection.find({metascore:{$gt:70}}).toArray((error,result)=>{
+
+    if(error)
+    {
+      return response.status(500).send(error)
+    }
+  response.send(result);
+  });
+});
+
+
+app.get("/movies/search",  (request,response)=>{
+//  console.log("blooooooooooooop");
+  var score= request.query.metascore ==undefined ? Number(request.query.metascore) : 0;;
+  var limitmax= request.query.limit ==undefined ? Number(request.query.limit) : 5;
+
+    collection.find({ metascore : { $gt: score } }).limit(limitmax).sort({ metascore: -1 }).toArray((error, result) => {
+      if(error) {
+          return response.status(500).send(error);
+      }
+      console.log(result);
+    });
+});
+
+app.post("/movies/:id", (request, response) => {
+    var review = response.body.review;
+    var date = response.body.date;
+    collection.aggregate([{$match:{"id": request.params.id}},{$set:{review:review,date:date}}], (error, result) => {
         if(error) {
             return response.status(500).send(error);
         }
@@ -52,23 +81,13 @@ app.post("/person", (request, response) => {
     });
 });
 
-/*app.get("/people", (request, response) => {
-    collection.find({}).toArray((error, result) => {
-        if(error) {
-            return response.status(500).send(error);
-        }
-        response.send(result);
-    });
-});
+app.get("/movies/:id",  (request,response)=>{
+  collection.find({"id":request.params.id}).toArray((error,result)=>{
 
-app.get("/person/:id", (request, response) => {
-    collection.findOne({ "_id": new ObjectId(request.params.id) }, (error, result) => {
-        if(error) {
-            return response.status(500).send(error);
-        }
-        response.send(result);
-    });
+    if(error)
+    {
+      return response.status(500).send(error)
+    }
+  response.send(result);
+  });
 });
-
-//curl -X POST -H 'content-type:application/json' -d '{"firstname":"Maria","lastname":"Raboy"}' http://localhost:3000/person
-*/
