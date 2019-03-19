@@ -67,7 +67,7 @@ app.get("/movies/search",  (request,response)=>{
           return response.status(500).send(error);
       }
       console.log(result);
-    });
+    }); 
 });
 
 app.post("/movies/:id", (request, response) => {
